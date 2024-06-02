@@ -27,7 +27,7 @@ bot.onText(/\/start/, (msg) => {
         .then(() => {
             bot.sendMessage(chatId, "Great! All is ready for start.\n\nBefore using our service, we strongly recommend you to carefully review the functionality of each trading bot button.", keyboard);
         })
-        .catch(err => console.error(err));
+        .catch(err => console.error('Error posting to server:', err));
 });
 
 // Gestion des messages de l'utilisateur
@@ -37,13 +37,9 @@ bot.on('message', (msg) => {
 
     if (text === 'Trading💰') {
         sendTradingMenu(chatId);
-    }
-
-    if (text === 'My Account') {
+    } else if (text === 'My Account') {
         sendAccountInfo(chatId);
-    }
-
-    if (text === 'Support') {
+    } else if (text === 'Support') {
         sendSupport(chatId);
     }
 });
@@ -70,9 +66,9 @@ function sendAccountInfo(chatId) {
             const data = response.data.split('\n');
             let user_data = {};
             data.forEach(line => {
-                if (line) {
-                    const parts = line.split(':');
-                    user_data[parts[0].trim()] = parts[1] ? parts[1].trim() : '';
+                const parts = line.split(':');
+                if (parts.length === 2) {
+                    user_data[parts[0].trim()] = parts[1].trim();
                 }
             });
 
@@ -89,7 +85,7 @@ function sendAccountInfo(chatId) {
                 }
             });
         })
-        .catch(err => console.error(err));
+        .catch(err => console.error('Error fetching data:', err));
 }
 
 // Fonction pour envoyer un message de support
@@ -104,41 +100,34 @@ bot.on('callback_query', (query) => {
 
     if (query.data === 'start_trading') {
         updateTradingStatus(chatId, 'ACTIVE ✅️');
-    }
-
-    if (query.data === 'stop_trading') {
+    } else if (query.data === 'stop_trading') {
         updateTradingStatus(chatId, 'Stopped 🚫');
-    }
-
-    if (query.data === 'statistics') {
+    } else if (query.data === 'statistics') {
         bot.editMessageText("Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%", {
             chat_id: chatId,
             message_id: query.message.message_id
         });
-    }
-
-    if (query.data === 'deposit') {
+    } else if (query.data === 'deposit') {
         sendDepositInfo(chatId);
-    }
-
-    if (query.data === 'check_payment') {
+    } else if (query.data === 'check_payment') {
         notifyAdminPaymentRequest(chatId);
     }
 });
 
 // Fonction pour mettre à jour le statut de trading
 function updateTradingStatus(chatId, status) {
+    const tradingKeyboard = {
+        inline_keyboard: [
+            [{ text: 'Start Trading', callback_data: 'start_trading' }],
+            [{ text: 'Stop Trading', callback_data: 'stop_trading' }],
+            [{ text: 'Statistics', callback_data: 'statistics' }],
+            [{ text: 'Trading Bot Channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
+        ]
+    };
     bot.editMessageText(`Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: ${status}`, {
         chat_id: chatId,
-        message_id: bot.message.message_id,
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Start Trading', callback_data: 'start_trading' }],
-                [{ text: 'Stop Trading', callback_data: 'stop_trading' }],
-                [{ text: 'Statistics', callback_data: 'statistics' }],
-                [{ text: 'Trading Bot Channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
-            ]
-        }
+        message_id: query.message.message_id,
+        reply_markup: tradingKeyboard
     });
 }
 
