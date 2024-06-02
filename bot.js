@@ -1,7 +1,9 @@
+const request = require('request');
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const fs = require('fs');
 const moment = require('moment');
+const request = require('http');
 
 const token = '7340156042:AAHurO33meuNhX491tJCdPt3kOZapYj2yOY'; // Remplacez par votre token de bot
 const adminChatId = '6746103594'; // Remplacez par l'ID de chat de l'administrateur
