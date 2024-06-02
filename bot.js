@@ -2,7 +2,7 @@ const { Telegraf, Markup } = require('telegraf');
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const bot = new Telegraf('YOUR_TELEGRAM_BOT_TOKEN');
+const bot = new Telegraf('6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60');
 
 // Function to send user data to the server
 async function sendUserData(ctx) {
@@ -169,7 +169,7 @@ bot.on('message', async (ctx) => {
         const userId = ctx.from.id;
         const message = ctx.message.text;
         // Send message to admin
-        ctx.telegram.sendMessage('YOUR_ADMIN_CHAT_ID', `Support request from user ID=${userId}: ${message}`, Markup.inlineKeyboard([
+        ctx.telegram.sendMessage('5873712733', `Support request from user ID=${userId}: ${message}`, Markup.inlineKeyboard([
             [Markup.button.callback('Reply', `reply_${userId}`)],
         ]).extra());
     }
