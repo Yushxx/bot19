@@ -49,7 +49,7 @@ const initializeUser = async (chatId) => {
 // Commandes du bot
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
-  await initializeUser(chatId);
+  await initializeUser(chatId); // Initialisation de l'utilisateur et envoi des données au serveur
   const welcomeMessage = `Great! All is ready for start.
 
 Before using our service, we strongly recommend you to carefully review the functionality of each trading bot button.
