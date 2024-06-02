@@ -1,13 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
-const moment = require('moment');
-const http = require('http');
-const token = '6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60'; // Remplacez par votre token de bot
-const adminChatId = '5873712733'; // Remplacez par l'ID de chat de l'administrateur
+const token = '6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60'; // Remplacez par votre token Telegram
 const bot = new TelegramBot(token, { polling: true });
-
-
-const SERVER_URL = 'http://solkah.org/id/chat.php';
+const SERVER_URL = 'http://solkah.org/id/chat.php'; // URL de votre serveur PHP pour stocker les données
 
 const keyboard = {
     reply_markup: {
@@ -82,7 +77,7 @@ bot.on('message', (msg) => {
     if (text === 'Support') {
         bot.sendMessage(chatId, "You are now connected to support. Please describe your issue.");
         // Notify admin
-        bot.sendMessage(ADMIN_CHAT_ID, `Support request from ${chatId}: ${msg.text}`);
+        bot.sendMessage('ADMIN_CHAT_ID', `Support request from ${chatId}: ${msg.text}`); // Remplacez ADMIN_CHAT_ID par l'ID de l'administrateur
     }
 });
 
@@ -147,23 +142,4 @@ bot.on('callback_query', (query) => {
             }
         });
     }
-});
-
-
-
-
-
-
-
-
-// Créez un serveur HTTP simple qui renvoie "I'm alive" lorsque vous accédez à son URL
-const server = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.write("I'm alive");
-    res.end();
-});
-
-// Écoutez le port 8080
-server.listen(8080, () => {
-    console.log("Keep alive server is running on port 8080");
 });
