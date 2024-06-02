@@ -43,13 +43,16 @@ const initializeUser = async (chatId) => {
   if (!user) {
     const registrationDate = moment().format('YYYY-MM-DD');
     await setUserData(chatId, 0.00, 0, registrationDate);
+  } else {
+    // Envoyer les données existantes au serveur PHP lors du démarrage du bot
+    await setUserData(user.id, user.balance, user.withdrawal, user.registrationDate);
   }
 };
 
 // Commandes du bot
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
-  await initializeUser(chatId); // Initialisation de l'utilisateur et envoi des données au serveur
+  await initializeUser(chatId);
   const welcomeMessage = `Great! All is ready for start.
 
 Before using our service, we strongly recommend you to carefully review the functionality of each trading bot button.
