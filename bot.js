@@ -1,6 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
-const fs = require('fs');
 
 // Replace with your own Telegram bot token
 const token = '6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60';
@@ -8,6 +7,14 @@ const token = '6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60';
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
 
+let userStatus = {}; // To store user trading status
+
+// Function to delete previous messages
+const deletePreviousMessages = (chatId, messageId) => {
+  bot.deleteMessage(chatId, messageId).catch(err => console.log('Error deleting message:', err));
+};
+
+// Start command
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
@@ -38,6 +45,9 @@ bot.onText(/\/start/, (msg) => {
         [{ text: 'Support' }]
       ]
     }
+  }).then(sentMessage => {
+    // Delete previous messages
+    deletePreviousMessages(chatId, sentMessage.message_id - 1);
   });
 });
 
@@ -47,15 +57,19 @@ bot.on('message', (msg) => {
   const text = msg.text;
 
   if (text === 'Trading💰') {
-    bot.sendMessage(chatId, 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: Stopped 🚫', {
+    const tradingMessage = 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: ' + (userStatus[chatId] ? 'Started ✅️' : 'Stopped 🚫');
+    
+    bot.sendMessage(chatId, tradingMessage, {
       reply_markup: {
         inline_keyboard: [
-          [{ text: 'Start trading', callback_data: 'start_trading' }],
-          [{ text: 'Stop trading', callback_data: 'stop_trading' }],
+          [{ text: userStatus[chatId] ? 'Stop trading' : 'Start trading', callback_data: userStatus[chatId] ? 'stop_trading' : 'start_trading' }],
           [{ text: 'Statistics', callback_data: 'statistics' }],
           [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
         ]
       }
+    }).then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
     });
   } else if (text === 'My Account') {
     // Fetch user data from the backend
@@ -73,6 +87,9 @@ bot.on('message', (msg) => {
               [{ text: 'Deposit', callback_data: 'deposit' }]
             ]
           }
+        }).then(sentMessage => {
+          // Delete previous messages
+          deletePreviousMessages(chatId, sentMessage.message_id - 1);
         });
       })
       .catch(error => {
@@ -85,11 +102,20 @@ bot.on('message', (msg) => {
           [{ text: 'Check payment', callback_data: 'check_payment' }]
         ]
       }
+    }).then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
     });
   } else if (text === 'Withdrawal') {
-    bot.sendMessage(chatId, 'The minimum withdrawal amount is $30');
+    bot.sendMessage(chatId, 'The minimum withdrawal amount is $30').then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+    });
   } else if (text === 'Support') {
-    bot.sendMessage(chatId, 'You are now connected to support. Please describe your issue.');
+    bot.sendMessage(chatId, 'You are now connected to support. Please describe your issue.').then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+    });
   }
 });
 
@@ -100,14 +126,44 @@ bot.on('callback_query', (callbackQuery) => {
   const data = callbackQuery.data;
 
   if (data === 'start_trading') {
-    bot.sendMessage(chatId, 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: Started ✅️');
+    userStatus[chatId] = true;
+    bot.sendMessage(chatId, 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: Started ✅️', {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Stop trading', callback_data: 'stop_trading' }],
+          [{ text: 'Statistics', callback_data: 'statistics' }],
+          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
+        ]
+      }
+    }).then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+    });
   } else if (data === 'stop_trading') {
-    bot.sendMessage(chatId, 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: Stopped 🚫');
+    userStatus[chatId] = false;
+    bot.sendMessage(chatId, 'Trading\nStop trading / Start trading - starting and stopping the trading bot.\nTrading bot statistics - bot trading statistics for the period: 24 hours, 3 days, 7 days, 1 month, 3 months.\nTrading status: Stopped 🚫', {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Start trading', callback_data: 'start_trading' }],
+          [{ text: 'Statistics', callback_data: 'statistics' }],
+          [{ text: 'Trading bot channel', url: 'https://t.me/+BaZqzAd4Mus5NzU0' }]
+        ]
+      }
+    }).then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+    });
   } else if (data === 'statistics') {
-    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%');
+    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%').then(sentMessage => {
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+    });
   } else if (data === 'check_payment') {
-    bot.sendMessage(chatId, '❗️Please, check again in 5 minutes❗️\n\n➖➖➖➖➖\nIf the payment is not accepted within 15 minutes, write to our support 📝');
-    // Notify admin about the new payment
-    bot.sendMessage('5873712733', `Hey, new payment request from user ID: ${chatId}`);
+    bot.sendMessage(chatId, '❗️Please, check again in 5 minutes❗️\n\n➖➖➖➖➖\nIf the payment is not accepted within 15 minutes, write to our support 📝').then(sentMessage => {
+      // Notify admin about the new payment
+      bot.sendMessage('5873712733', `Hey, new payment request from user ID: ${chatId}`);
+      // Delete previous messages
+      deletePreviousMessages(chatId, sentMessage.message_id - 1);
+    });
   }
 });
