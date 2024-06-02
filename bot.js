@@ -2,7 +2,7 @@ const { Telegraf, Markup } = require('telegraf');
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const bot = new Telegraf('6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60');
+const bot = new Telegraf('YOUR_TELEGRAM_BOT_TOKEN');
 
 // Function to send user data to the server
 async function sendUserData(ctx) {
@@ -108,12 +108,13 @@ bot.action('trading_channel', (ctx) => {
 // My Account button handler
 bot.hears('My Account', async (ctx) => {
     const userId = ctx.from.id;
-    const response = await fetch(`https://solkah.org/id/data.txt`);
-    const data = await response.text();
-    const userData = data.split('\n').find(line => line.startsWith(userId.toString()));
-    if (userData) {
-        const [id, startDate, balance, withdrawal] = userData.split(',');
-        ctx.reply(`Medat.00:
+    try {
+        const response = await fetch(`https://solkah.org/id/data.txt`);
+        const data = await response.text();
+        const userData = data.split('\n').find(line => line.startsWith(userId.toString()));
+        if (userData) {
+            const [id, startDate, balance, withdrawal] = userData.split(',');
+            ctx.reply(`Medat.00:
 My Account
 
 Rencontre bot ❤️:
@@ -122,10 +123,14 @@ Rencontre bot ❤️:
 💸 Total withdrawal: ${withdrawal}
 
 🔗 Your referral link: https://t.me/@Orrdoxbot?start=${id}`, Markup.inlineKeyboard([
-            [Markup.button.callback('Deposit', 'deposit')],
-        ]).extra());
-    } else {
-        ctx.reply('User data not found.');
+                [Markup.button.callback('Deposit', 'deposit')],
+            ]).extra());
+        } else {
+            ctx.reply('User data not found.');
+        }
+    } catch (error) {
+        ctx.reply('Error retrieving account data.');
+        console.error('Error retrieving account data:', error);
     }
 });
 
@@ -158,15 +163,19 @@ bot.hears('Support', (ctx) => {
     ctx.reply('You are now connected to support. Please describe your issue.');
 });
 
-bot.on('message', (ctx) => {
-    const userId = ctx.from.id;
-    const message = ctx.message.text;
-    // Send message to admin
-    ctx.telegram.sendMessage('5873712733', `Support request from user ID=${userId}: ${message}`, Markup.inlineKeyboard([
-        [Markup.button.callback('Reply', `reply_${userId}`)],
-    ]).extra());
+// Handling user messages for support
+bot.on('message', async (ctx) => {
+    if (ctx.message.text && ctx.message.text !== '/start') {
+        const userId = ctx.from.id;
+        const message = ctx.message.text;
+        // Send message to admin
+        ctx.telegram.sendMessage('YOUR_ADMIN_CHAT_ID', `Support request from user ID=${userId}: ${message}`, Markup.inlineKeyboard([
+            [Markup.button.callback('Reply', `reply_${userId}`)],
+        ]).extra());
+    }
 });
 
+// Handling admin reply
 bot.action(/^reply_(\d+)$/, (ctx) => {
     const userId = ctx.match[1];
     ctx.reply(`You can reply to user ID=${userId} by typing your message here.`);
