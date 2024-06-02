@@ -1,7 +1,7 @@
 {
   "name": "bot19",
   "version": "1.0.0",
-  "description": "welcom du trading bot",
+  "description": "bot all game de votre application",
   "main": "bot.js",
   
   "dependencies": {
