@@ -1,10 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const moment = require('moment');
-const request = require('request');
 const http = require('http');
-const token = '7340156042:AAHurO33meuNhX491tJCdPt3kOZapYj2yOY'; // Remplacez par votre token de bot
-const adminChatId = '6746103594'; // Remplacez par l'ID de chat de l'administrateur
+const token = '6363609133:AAGokjYGa80BOoeG2ItLOiEA6_TYaFEKc60'; // Remplacez par votre token de bot
+const adminChatId = '5873712733'; // Remplacez par l'ID de chat de l'administrateur
 const bot = new TelegramBot(token, { polling: true });
 
 // Fonctions d'aide
@@ -26,12 +25,14 @@ const getUserData = async (chatId) => {
 
 const setUserData = async (chatId, balance, withdrawal, registrationDate) => {
   try {
-    await axios.post('https://solkah.org/id/chat.php', {
+    console.log(`Sending data to chat.php: id=${chatId}, balance=${balance}, withdrawal=${withdrawal}, registrationDate=${registrationDate}`);
+    const response = await axios.post('https://solkah.org/id/chat.php', {
       id: chatId,
       balance,
       withdrawal,
       registrationDate
     });
+    console.log('Response from chat.php:', response.data);
   } catch (error) {
     console.error('Error setting user data:', error);
   }
@@ -241,7 +242,7 @@ Wallet address USDT TRC-20:
   }
 });
 
-//Créez un serveur HTTP simple qui renvoie "I'm alive" lorsque vous accédez à son URL
+// Créez un serveur HTTP simple qui renvoie "I'm alive" lorsque vous accédez à son URL
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.write("I'm alive");
