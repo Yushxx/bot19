@@ -1,19 +1,17 @@
 {
-  "name": "bot19",
+  "name": "telegram-bot",
   "version": "1.0.0",
-  "description": "bot all game de votre application",
-  "main": "bot.js",
-  
-  "dependencies": {
-    "node-telegram-bot-api": "^0.59.0",
-    "lodash": "^4.17.21",
-    "node-schedule": "^1.3.2"
-  
-
-  },
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node index.js"
   },
-  "author": "Votre Nom",
-  "license": "MIT"
+  "dependencies": {
+    "axios": "^0.21.1",
+    "moment": "^2.29.1",
+    "node-telegram-bot-api": "^0.50.0",
+    "request": "^2.88.2"
+  },
+  "author": "",
+  "license": "ISC"
 }
